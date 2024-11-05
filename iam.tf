@@ -9,7 +9,8 @@ data "aws_iam_policy_document" "task_assume" {
       type        = "Service"
       identifiers = [
         "ecs-tasks.amazonaws.com", 
-        "batch.amazonaws.com"
+        "batch.amazonaws.com",
+        "ec2.amazonaws.com"
         ]
     }
   }
