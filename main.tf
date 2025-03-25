@@ -3,6 +3,12 @@ variable "env" {
   description = "description"
 }
 
+variable "create_resources" {
+  type        = bool
+  description = "Flag to create resources if they do not exist"
+  default     = false
+}
+
 variable "model" {
   type        = string
   description = "The prefix of the resource to be created"
