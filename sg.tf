@@ -4,7 +4,7 @@ resource "aws_security_group" "main_sg" {
   count = var.create_resources ? 1 : 0
 
   name   = var.main_sg
-  vpc_id = data.aws_vpc.existing_vpc.id
+  vpc_id = local.vpc_id
 
   ingress {
     from_port   = 0
@@ -19,12 +19,19 @@ resource "aws_security_group" "main_sg" {
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
+
+  tags = merge(
+    var.tags,
+    {
+      Name = var.main_sg
+    }
+  )
 }
 
 data "aws_security_group" "main_sg" {
   count = var.create_resources ? 0 : 1
 
-  vpc_id = data.aws_vpc.existing_vpc.id
+  vpc_id = local.vpc_id
 
   filter {
     name   = "group-name"

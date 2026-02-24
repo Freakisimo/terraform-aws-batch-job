@@ -1,50 +1,49 @@
-variable "env" {
-  type        = string
-  description = "description"
+resource "aws_batch_compute_environment" "batch_ce" {
+  name = "${var.model}-compute-environment-${var.env}"
+  type = "MANAGED"
+  compute_resources {
+    type               = "FARGATE"
+    min_vcpus          = var.min_vcpu
+    max_vcpus          = var.max_vcpu
+    security_group_ids = [local.security_group_id]
+    subnets            = local.private_subnet_ids
+  }
+  tags = var.tags
 }
 
-variable "create_resources" {
-  type        = bool
-  description = "Flag to create resources if they do not exist"
-  default     = false
+resource "aws_batch_job_queue" "batch_ce" {
+  name                 = "${var.model}-job-queue-${var.env}"
+  priority             = 1
+  compute_environment_order {
+    order               = 1
+    compute_environment = aws_batch_compute_environment.batch_ce.arn
+  }
+  state                = "ENABLED"
+  tags                 = var.tags
 }
 
-variable "model" {
-  type        = string
-  description = "The prefix of the resource to be created"
+resource "aws_batch_job_definition" "batch_ce" {
+  name = "${var.model}-job-definition-${var.env}"
+  type = "container"
+  platform_capabilities = [
+    "FARGATE",
+  ]
+  tags = var.tags
+
+  container_properties = <<EOF
+    {
+      "image": "${var.image}",
+      "fargatePlatformConfiguration": { "platformVersion": "1.4.0" },
+      "resourceRequirements": [
+        {"type": "MEMORY", "value": "${var.memory}"},
+        {"type": "VCPU",   "value": "${var.vcpu}"}
+      ],
+      "executionRoleArn": "${var.create_resources ? aws_iam_role.execution_role[0].arn : data.aws_iam_role.execution_role[0].arn}",
+      "jobRoleArn": "${var.create_resources ? aws_iam_role.batch_job_role[0].arn : data.aws_iam_role.batch_job_role[0].arn}"
+    }
+    EOF
 }
 
-variable "main_sg" {
-  type        = string
-  description = "description"
-}
 
-variable "vpc_name" {
-  type        = string
-  description = "description"
-}
-
-variable "min_vcpu" {
-  type        = number
-  description = "The amount of cpu to give to the ECS instance."
-}
-
-variable "max_vcpu" {
-  type        = number
-  description = "The amount of cpu to give to the ECS instance."
-}
-
-variable "vcpu" {
-  type        = number
-  description = "The amount of ecs memory to give to the ECS instance."
-}
-
-variable "memory" {
-  type        = number
-  description = "The amount of ecs memory to give to the ECS instance."
-}
-
-variable "image" {
-  description = "image URL"
-  type        = string
-}
+# "executionRoleArn": "${aws_iam_role.execution_role.arn}",
+# "jobRoleArn": "${aws_iam_role.batch_job_role.arn}"
